@@ -1,35 +1,40 @@
-"""One Perfect Strawberry — entry for "The picture that tastes of one ingredient".
+#!/usr/bin/env python3
+"""One Perfect Strawberry — make.fun entry.
 
-The program simply places our single-ingredient picture at the location the
-bounty harness expects: /output/entry.png. The image itself (entry.png, next
-to this file) is the entry — one ripe strawberry, photographed in extreme
-macro, glistening with dew. Nothing else is in the frame, so the taste is
-unmistakably strawberry, and only strawberry.
-
-Standard library only; no network, no extra dependencies.
+Copies the bundled entry.png (a single ripe strawberry, extreme macro)
+to the output directory as entry.png, so the judge sees exactly one
+ingredient, deliciously.
 """
 
+import os
 import shutil
-from pathlib import Path
-
-HERE = Path(__file__).resolve().parent
-SOURCE = HERE / "entry.png"
-DEST_DIR = Path("/output")
-DEST = DEST_DIR / "entry.png"
+import sys
 
 
-def main() -> None:
-    if not SOURCE.is_file():
-        raise SystemExit(f"missing source image: {SOURCE}")
-    DEST_DIR.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(SOURCE, DEST)
-    # Sanity check: the harness judges this exact file, so refuse to leave a
-    # zero-byte or truncated copy behind if something went wrong mid-copy.
-    if DEST.stat().st_size != SOURCE.stat().st_size:
-        DEST.unlink(missing_ok=True)
-        raise SystemExit("copy incomplete: size mismatch, output removed")
-    print(f"wrote {DEST} ({DEST.stat().st_size} bytes)")
+def main() -> int:
+    here = os.path.dirname(os.path.abspath(__file__))
+    source = os.path.join(here, "entry.png")
+    out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
+    os.makedirs(out_dir, exist_ok=True)
+    dest = os.path.join(out_dir, "entry.png")
+
+    if not os.path.isfile(source):
+        print(f"error: {source} not found", file=sys.stderr)
+        return 1
+
+    shutil.copyfile(source, dest)
+
+    size = os.path.getsize(dest)
+    if size == 0:
+        print("error: copied entry.png is empty", file=sys.stderr)
+        return 1
+    if size != os.path.getsize(source):
+        print("error: copied entry.png size mismatch", file=sys.stderr)
+        return 1
+
+    print(f"wrote {dest} ({size} bytes, {size / 1024:.1f} KiB)")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
