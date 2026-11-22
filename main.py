@@ -1,38 +1,32 @@
-#!/usr/bin/env python3
-"""One Perfect Strawberry — make.fun entry.
+"""One Perfect Strawberry — entry for the-picture-that-tastes-of-one-20261122-2047.
 
-Copies the bundled entry.png (a single ripe strawberry, extreme macro)
-to the output directory as entry.png, so the judge sees exactly one
-ingredient, deliciously.
+Copies the entry image (one perfect ripe strawberry) to /output/entry.png
+so the make.fun harness can judge it.
 """
 
 import os
 import shutil
 import sys
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+SOURCE = os.path.join(HERE, "entry.png")
+DEST_DIR = "/output"
+DEST = os.path.join(DEST_DIR, "entry.png")
+
 
 def main() -> int:
-    here = os.path.dirname(os.path.abspath(__file__))
-    source = os.path.join(here, "entry.png")
-    out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
-    os.makedirs(out_dir, exist_ok=True)
-    dest = os.path.join(out_dir, "entry.png")
-
-    if not os.path.isfile(source):
-        print(f"error: {source} not found", file=sys.stderr)
+    if not os.path.isfile(SOURCE):
+        print(f"error: source image not found: {SOURCE}", file=sys.stderr)
         return 1
-
-    shutil.copyfile(source, dest)
-
-    size = os.path.getsize(dest)
-    if size == 0:
-        print("error: copied entry.png is empty", file=sys.stderr)
+    os.makedirs(DEST_DIR, exist_ok=True)
+    shutil.copyfile(SOURCE, DEST)
+    size = os.path.getsize(DEST)
+    with open(DEST, "rb") as fh:
+        magic = fh.read(8)
+    if magic != b"\x89PNG\r\n\x1a\n":
+        print("error: output is not a valid PNG", file=sys.stderr)
         return 1
-    if size != os.path.getsize(source):
-        print("error: copied entry.png size mismatch", file=sys.stderr)
-        return 1
-
-    print(f"wrote {dest} ({size} bytes, {size / 1024:.1f} KiB)")
+    print(f"copied {SOURCE} -> {DEST} ({size} bytes, PNG verified)")
     return 0
 
 
